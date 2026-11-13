@@ -1,26 +1,129 @@
-@import "tailwindcss";
+@import "tailwindcss" source("../");
 
+/* Kontura design tokens. Cool steel neutrals, one accent ("kerf" orange, the colour of a cut edge). See docs/DESIGN_SYSTEM.md. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light dark;
+  --bg: light-dark(#f3f5f7, #0c1116);
+  --surface: light-dark(#fcfdfd, #131a21);
+  --surface-2: light-dark(#e9edf1, #1b242d);
+  --line: light-dark(#d3dae1, #27323d);
+  --line-strong: light-dark(#aab4bf, #3d4b59);
+  --ink: light-dark(#10161d, #e8edf2);
+  --ink-2: light-dark(#44505c, #b1bcc7);
+  --ink-3: light-dark(#5d6975, #8794a1);
+  --accent: #ff6b2c;
+  --on-accent: #10161d;
+  --accent-text: light-dark(#b43a06, #ff8d5c);
+  --ok: light-dark(#1f7a4d, #4cc38a);
+  --warn: light-dark(#8f5200, #f0b35a);
+  --danger: light-dark(#b3261e, #ff7b72);
+  --radius: 3px;
 }
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
+  --color-accent-text: var(--accent-text);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-archivo), system-ui, sans-serif;
+  --font-display: var(--font-barlow), var(--font-archivo), system-ui, sans-serif;
+  --font-mono: var(--font-jb), ui-monospace, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html { -webkit-text-size-adjust: 100%; }
+  body { background: var(--bg); color: var(--ink); font-family: var(--font-sans); font-size: 15px; line-height: 1.55; }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 600; line-height: 1.08; text-wrap: balance; }
+  p { text-wrap: pretty; }
+  a { text-underline-offset: 3px; }
+  :focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
+  ::selection { background: var(--accent); color: var(--on-accent); }
+  input, select, textarea, button { font: inherit; }
+}
+
+@layer components {
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; height: 2.6rem; padding: 0 1.05rem;
+    border: 1px solid transparent; border-radius: var(--radius); font-weight: 600; font-size: 0.92rem; white-space: nowrap; cursor: pointer;
+    transition: transform 80ms, background-color 150ms, border-color 150ms, color 150ms;
   }
+  .btn:active { transform: translateY(1px); }
+  .btn:disabled, .btn[aria-disabled="true"] { opacity: 0.55; cursor: not-allowed; }
+  .btn-primary { background: var(--accent); color: var(--on-accent); }
+  .btn-primary:hover { background: #ff7d45; }
+  .btn-secondary { background: var(--surface); border-color: var(--line-strong); color: var(--ink); }
+  .btn-secondary:hover { border-color: var(--ink-3); }
+  .btn-ghost { color: var(--ink-2); }
+  .btn-ghost:hover { background: var(--surface-2); color: var(--ink); }
+  .btn-danger { background: var(--surface); border-color: var(--line-strong); color: var(--danger); }
+  .btn-danger:hover { border-color: var(--danger); }
+  .btn-sm { height: 2.1rem; padding: 0 0.75rem; font-size: 0.84rem; }
+
+  .input {
+    display: block; width: 100%; height: 2.6rem; padding: 0 0.7rem; background: var(--surface); color: var(--ink);
+    border: 1px solid var(--line-strong); border-radius: var(--radius); font-size: 0.94rem;
+  }
+  .input::placeholder { color: var(--ink-3); }
+  .input:hover { border-color: var(--ink-3); }
+  textarea.input { height: auto; min-height: 5.5rem; padding: 0.6rem 0.7rem; }
+  .input-sm { height: 2.1rem; font-size: 0.86rem; padding: 0 0.5rem; }
+  .label { display: block; margin-bottom: 0.35rem; font-size: 0.82rem; font-weight: 600; color: var(--ink-2); }
+  .hint { margin-top: 0.3rem; font-size: 0.8rem; color: var(--ink-3); }
+
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+  .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+  .link { color: var(--accent-text); text-decoration: underline; }
+
+  .tbl { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  .tbl th { padding: 0.55rem 0.9rem; text-align: left; font-size: 0.76rem; font-weight: 600; color: var(--ink-3); border-bottom: 1px solid var(--line); white-space: nowrap; }
+  .tbl td { padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  .tbl tr:last-child td { border-bottom: 0; }
+  .tbl tbody tr:hover td { background: color-mix(in srgb, var(--surface-2) 55%, transparent); }
+
+  .badge { display: inline-flex; align-items: center; height: 1.45rem; padding: 0 0.5rem; border: 1px solid var(--line-strong); border-radius: var(--radius); font-size: 0.74rem; font-weight: 600; color: var(--ink-2); white-space: nowrap; }
+  .badge-ok { color: var(--ok); border-color: currentColor; }
+  .badge-warn { color: var(--warn); border-color: currentColor; }
+  .badge-danger { color: var(--danger); border-color: currentColor; }
+  .badge-accent { color: var(--accent-text); border-color: currentColor; }
+
+  .note { padding: 0.7rem 0.9rem; border: 1px solid var(--line-strong); border-left-width: 3px; border-radius: var(--radius); background: var(--surface); font-size: 0.9rem; }
+  .note-warn { border-left-color: var(--warn); }
+  .note-danger { border-left-color: var(--danger); }
+  .note-ok { border-left-color: var(--ok); }
+
+  /* the cutting table a part lies on: a 10 mm drafting grid */
+  .sheet { background-color: var(--surface); background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px); background-size: 24px 24px; background-position: -1px -1px; }
+  .cut { fill: none; stroke: var(--accent-text); stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+  .bend { fill: none; stroke: var(--ink-3); stroke-dasharray: 5 4; vector-effect: non-scaling-stroke; }
+
+  .skeleton { background: var(--surface-2); border-radius: var(--radius); }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* hero only: the laser traces the contour once (storytelling: this is what the product reads from a drawing) */
+/* dash lengths must be in path units for pathLength=1 to work, so the trace opts out of non-scaling strokes */
+.trace .cut { vector-effect: none; stroke-width: 1.2px; }
+@media (prefers-reduced-motion: no-preference) {
+  .trace .cut { stroke-dasharray: 1; stroke-dashoffset: 1; animation: trace 2.2s cubic-bezier(0.3, 0, 0.2, 1) 0.2s forwards; }
+  .skeleton { animation: pulse 1.4s ease-in-out infinite; }
+}
+@keyframes trace { to { stroke-dashoffset: 0; } }
+@keyframes pulse { 50% { opacity: 0.5; } }
+
+@media print {
+  :root { color-scheme: light; }
+  body { background: #fff; font-size: 12px; }
+  .no-print { display: none !important; }
+  .panel { border-color: #999; }
 }
