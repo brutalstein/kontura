@@ -24,8 +24,9 @@ export async function freshDb(): Promise<DB> {
   const url = new URL(process.env.TEST_DATABASE_URL);
   url.pathname = `/${name}`;
   const pool = new Pool({ connectionString: url.toString(), max: 2 });
-  // DROP ... WITH (FORCE) can reach a connection that is still closing; without a listener that surfaces as an unhandled error.
-  pool.on("connect", (client) => client.on("error", () => {}));
+  // pool.end() resolves before its sockets close, so DROP ... WITH (FORCE) can cut a connection that is still closing.
+  // pg-pool re-emits that on the pool, and an unlistened 'error' event is an uncaught exception.
+  pool.on("error", () => {});
   cleanups.push(async () => {
     await pool.end();
     try { await admin.query(`DROP DATABASE "${name}" WITH (FORCE)`); }
