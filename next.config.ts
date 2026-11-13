@@ -18,10 +18,13 @@ const csp = [
   "object-src 'none'",
 ].join("; ");
 
+const cloudflare = process.env.KONTURA_TARGET === "cloudflare";
+
 const nextConfig: NextConfig = {
   distDir: process.env.KONTURA_E2E === "true" ? ".next-e2e" : ".next",
   // cacheComponents / partialPrefetching are off on purpose: every screen is per-tenant and reads the session cookie.
-  serverExternalPackages: ["@electric-sql/pglite"],
+  serverExternalPackages: cloudflare ? [] : ["@electric-sql/pglite"],
+  ...(cloudflare ? { turbopack: { resolveAlias: { "@electric-sql/pglite": "./src/server/no-embedded-db.ts" } } } : {}),
   poweredByHeader: false,
   async headers() {
     return [{

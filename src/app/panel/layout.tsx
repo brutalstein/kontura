@@ -1,3 +1,4 @@
+import { mailDisabled } from "@/server/mail";
 import Link from "next/link";
 import { logoutAction, resendVerifyAction, switchOrgAction } from "@/app/actions";
 import { ROLE_LABEL, entitlements } from "@/server/core";
@@ -55,7 +56,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
           {info.org.subStatus === "past_due" && (
             <p role="alert" className="note note-warn">Son ödemeniz alınamadı. Ödeme sağlayıcı kartınızı yeniden deneyecek; kart bilgilerinizi kontrol edin. <Link className="link" href="/panel/ayarlar/abonelik">Abonelik</Link></p>
           )}
-          {!info.user.emailVerifiedAt && (
+          {!info.user.emailVerifiedAt && !mailDisabled() && (
             <ActionForm action={resendVerifyAction} className="note note-warn">
               <span className="mr-3">E-posta adresiniz ({info.user.email}) henüz doğrulanmadı.</span>
               <Submit className="link">Doğrulama e-postasını yeniden gönder</Submit>

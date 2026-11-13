@@ -60,7 +60,7 @@ export function ActionForm({ action, children, className, auto, resetOnOk, confi
       {state?.ok && (
         <p role="status" className="note note-ok col-span-full mt-3">
           {state.ok}
-          {state.url && <span className="mt-1 block text-ink-2">Yerel ortam, e-posta gönderilmedi. Bağlantı: <a className="link break-all" href={state.url}>{state.url}</a></span>}
+          {state.url && <span className="mt-1 block text-ink-2">E-posta gönderilmedi. Bağlantı: <a className="link break-all" href={state.url}>{state.url}</a></span>}
         </p>
       )}
       {state?.html && <div id="iyzipay-checkout-form" className="responsive mt-4" />}

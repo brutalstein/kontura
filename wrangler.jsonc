@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "kontura",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "kontura" }],
+  // PostgreSQL (Supabase) through Hyperdrive. Create it with caching off: the app reads its own writes.
+  //   wrangler hyperdrive create kontura-db --connection-string "<session pooler url>" --caching-disabled
+  // Local preview reads CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE instead.
+  "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "badf706292964e16856219bba0500978" }],
+  "vars": {
+    "APP_URL": "https://kontura.ustacenker16.workers.dev",
+    "DB_MIGRATE_ON_START": "false",
+    "MAIL_OPTIONAL": "true"
+  },
+  "observability": { "enabled": true }
+}

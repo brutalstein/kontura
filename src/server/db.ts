@@ -18,19 +18,40 @@ export async function openEmbedded(dataDir?: string): Promise<DB> {
   return db as unknown as DB;
 }
 
-async function openServer(url: string): Promise<DB> {
+async function openServer(url: string, max = Number(process.env.DB_POOL_MAX ?? 10), migrateOnStart = process.env.DB_MIGRATE_ON_START !== "false"): Promise<DB> {
   const { Pool } = await import("pg");
   const { drizzle } = await import("drizzle-orm/node-postgres");
-  const { migrate } = await import("drizzle-orm/node-postgres/migrator");
-  const db = drizzle(new Pool({ connectionString: url, max: Number(process.env.DB_POOL_MAX ?? 10) }), { schema });
-  if (process.env.DB_MIGRATE_ON_START !== "false") await migrate(db, { migrationsFolder: MIGRATIONS });
+  const db = drizzle(new Pool({ connectionString: url, max }), { schema });
+  if (migrateOnStart) {
+    const { migrate } = await import("drizzle-orm/node-postgres/migrator");
+    await migrate(db, { migrationsFolder: MIGRATIONS });
+  }
   return db as unknown as DB;
+}
+
+const onWorkers = typeof navigator !== "undefined" && navigator.userAgent === "Cloudflare-Workers";
+const perRequest = new WeakMap<object, Promise<DB>>();
+/**
+ * Cloudflare Workers: a socket belongs to the request that opened it, so the handle lives as long as the request, not the process.
+ * Connections go through the Hyperdrive binding, which pools them next to the database. Migrations run at release time, never here.
+ */
+async function openWorker(): Promise<DB> {
+  const { getCloudflareContext } = await import("@opennextjs/cloudflare");
+  const { env, ctx } = getCloudflareContext();
+  let db = perRequest.get(ctx);
+  if (!db) {
+    // 4 of the 6 simultaneous outbound connections a request may hold
+    db = openServer((env as unknown as { HYPERDRIVE: { connectionString: string } }).HYPERDRIVE.connectionString, 4, false);
+    perRequest.set(ctx, db);
+  }
+  return db;
 }
 
 const globalForDb = globalThis as { __konturaDb?: Promise<DB> };
 
 /** Process-wide database handle. Production requires DATABASE_URL; development falls back to an embedded database on disk. */
 export function getDb(): Promise<DB> {
+  if (onWorkers) return openWorker();
   if (!globalForDb.__konturaDb) {
     const url = process.env.DATABASE_URL;
     if (url) globalForDb.__konturaDb = openServer(url);

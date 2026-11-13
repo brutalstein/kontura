@@ -7,7 +7,7 @@ import * as billing from "@/server/billing";
 import * as catalog from "@/server/catalog";
 import { AppError, rateLimit } from "@/server/core";
 import { getDb } from "@/server/db";
-import { mailConfigured } from "@/server/mail";
+import { mailConfigured, mailDisabled } from "@/server/mail";
 import { deleteOrg } from "@/server/privacy";
 import * as quotes from "@/server/quotes";
 import * as parts from "@/server/parts";
@@ -52,6 +52,8 @@ export async function logoutAction() {
 export async function forgotAction(_: State, fd: FormData): Promise<State> {
   return attempt(async () => {
     const url = await auth.requestPasswordReset(await getDb(), s(fd, "email"), await clientIp());
+    // the reset link is a bearer credential: without mail it is never shown on screen, only the operator can issue it (pnpm admin <email> --reset-link)
+    if (mailDisabled()) return { error: "Bu kurulumda e-posta gönderimi kapalı olduğu için sıfırlama bağlantısı gönderilemiyor. Hesabınızı açan yöneticiyle iletişime geçin." };
     return { ok: "Bu e-posta kayıtlıysa sıfırlama bağlantısı gönderildi. Gelen kutunuzu kontrol edin.", url: devLink(url) };
   });
 }
@@ -179,6 +181,8 @@ export async function savePortalAction(_: State, fd: FormData): Promise<State> {
 export async function inviteAction(_: State, fd: FormData): Promise<State> {
   return panelAction(async ({ ctx }) => {
     const url = await auth.inviteMember(ctx, { email: s(fd, "email"), role: s(fd, "role") });
+    // the inviter is a signed-in admin of this organisation, so handing them the invite link is safe
+    if (mailDisabled()) return { ok: "Davet oluşturuldu. Bu kurulumda e-posta gönderimi kapalı; bağlantıyı davet ettiğiniz kişiyle kendiniz paylaşın.", url };
     return { ok: "Davet gönderildi.", url: devLink(url) };
   });
 }

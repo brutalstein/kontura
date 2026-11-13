@@ -11,7 +11,10 @@
     "typecheck": "tsc --noEmit",
     "admin": "tsx --env-file-if-exists=.env.local scripts/admin.ts",
     "db:migrate": "node --env-file-if-exists=.env.local scripts/migrate.mjs",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "cf:build": "cross-env KONTURA_TARGET=cloudflare opennextjs-cloudflare build",
+    "cf:preview": "opennextjs-cloudflare preview",
+    "cf:deploy": "cross-env CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE=postgres://local@127.0.0.1:5432/local opennextjs-cloudflare deploy"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.16",
@@ -33,6 +36,7 @@
     "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cross-env": "^10.1.0",
     "drizzle-kit": "^0.31.11",
     "eslint": "^9",
     "eslint-config-next": "16.4.6",

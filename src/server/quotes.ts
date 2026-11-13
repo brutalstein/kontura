@@ -294,11 +294,10 @@ export async function sendQuote(ctx: Ctx, id: string) {
   await ctx.db.update(quotes).set({ status: "sent", sentAt: new Date(), validUntil }).where(eq(quotes.id, id));
   const url = publicQuoteUrl(q.publicToken);
   const to = q.contact?.email ?? (q.customerId ? (await ownCustomer(ctx, q.customerId)).email : null);
-  if (to) {
-    await sendMail({ to, subject: `${org.name} — Teklif #${q.number}`, text: `Merhaba,\n\n${org.name} size bir fiyat teklifi gönderdi.\n\nTeklifi görüntülemek ve onaylamak için:\n${url}\n\nGeçerlilik: ${validUntil.toLocaleDateString("tr-TR")}` });
-  }
+  let emailed: string | null = null;
+  if (to && (await sendMail({ to, subject: `${org.name} — Teklif #${q.number}`, text: `Merhaba,\n\n${org.name} size bir fiyat teklifi gönderdi.\n\nTeklifi görüntülemek ve onaylamak için:\n${url}\n\nGeçerlilik: ${validUntil.toLocaleDateString("tr-TR")}` }))) emailed = to;
   await audit(ctx, "quote.send", `#${q.number}`);
-  return { url, emailed: to };
+  return { url, emailed };
 }
 
 export async function reopenQuote(ctx: Ctx, id: string) {

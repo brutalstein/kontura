@@ -27,7 +27,8 @@ export async function clearSessionCookie() {
 /** shortcut: trusts X-Forwarded-For, which is only correct behind a reverse proxy that overwrites it (see docs/DEPLOYMENT.md). */
 export async function clientIp() {
   const h = await headers();
-  return h.get("x-forwarded-for")?.split(",")[0].trim() || h.get("x-real-ip") || "unknown";
+  // Cloudflare sets cf-connecting-ip itself; the first x-forwarded-for entry can be supplied by the client there
+  return h.get("cf-connecting-ip") || h.get("x-forwarded-for")?.split(",")[0].trim() || h.get("x-real-ip") || "unknown";
 }
 
 export type Authed = { ctx: Ctx; raw: string; info: SessionInfo & { org: typeof orgs.$inferSelect; role: Role } };
