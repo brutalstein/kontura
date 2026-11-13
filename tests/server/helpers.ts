@@ -24,6 +24,8 @@ export async function freshDb(): Promise<DB> {
   const url = new URL(process.env.TEST_DATABASE_URL);
   url.pathname = `/${name}`;
   const pool = new Pool({ connectionString: url.toString(), max: 2 });
+  // DROP ... WITH (FORCE) can reach a connection that is still closing; without a listener that surfaces as an unhandled error.
+  pool.on("connect", (client) => client.on("error", () => {}));
   cleanups.push(async () => {
     await pool.end();
     try { await admin.query(`DROP DATABASE "${name}" WITH (FORCE)`); }

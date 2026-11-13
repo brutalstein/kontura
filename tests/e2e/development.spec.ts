@@ -13,13 +13,19 @@ test("CSS updates preserve form input and do not start a reload loop", async ({ 
     await page.evaluate((value) => { Object.assign(window, { konturaDocument: value }); }, marker);
     writeFileSync(stylesheet, Buffer.concat([original, Buffer.from(`\n:root { --kontura-hmr-probe: ${marker}; }\n`)]));
     await expect(page.locator("html")).toHaveCSS("--kontura-hmr-probe", marker);
+    // The stylesheet arrived by hot update: same document, typed input intact.
+    expect(await page.evaluate(() => Reflect.get(window, "konturaDocument"))).toBe(marker);
+    await expect(page.getByLabel("Ad soyad")).toHaveValue("Kaybolmaması gereken bilgi");
+    // Next 16.4.6 (webpack dev) broadcasts its sync message to every open tab when a new tab connects, and a tab whose
+    // last seen compilation hash differs reloads once. One reload is the framework's behaviour; a loop is the defect.
+    let loads = 0;
+    page.on("load", () => { loads++; });
     const other = await context.newPage();
     await other.goto("/giris");
     await other.reload();
     // Observe beyond a reconnect interval: a hash mismatch repeatedly reloads both pages.
     await page.waitForTimeout(6000);
-    expect(await page.evaluate(() => Reflect.get(window, "konturaDocument"))).toBe(marker);
-    await expect(page.getByLabel("Ad soyad")).toHaveValue("Kaybolmaması gereken bilgi");
+    expect(loads).toBeLessThanOrEqual(1);
     await other.close();
   } finally {
     writeFileSync(stylesheet, original);

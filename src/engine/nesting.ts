@@ -104,15 +104,18 @@ function grid(item: NestItem, o: NestOptions): Placement[][] {
   const [L, flip] = L1.count >= L2.count ? [L1, false] : [L2, true];
   if (L.count === 0) throw new NestError("Parça plakaya sığmıyor.");
   // column-major cell list so a partial sheet fills from the left edge
-  const cells: Placement[] = [];
-  for (let c = 0; c < L.a; c++) for (let r = 0; r < L.rowsA; r++) {
-    cells.push({ id: item.id, x: o.margin + c * L.cw, y: o.margin + r * L.ch, w: L.cw - o.gap, h: L.ch - o.gap, rotated: flip });
-  }
-  for (let c = 0; c < L.b; c++) for (let r = 0; r < L.rowsB; r++) {
-    cells.push({ id: item.id, x: o.margin + L.a * L.cw + c * L.rw, y: o.margin + r * L.rh, w: L.rw - o.gap, h: L.rh - o.gap, rotated: !flip });
-  }
+  const columns = (count: number, x0: number, cw: number, ch: number, rows: number, rotated: boolean): Placement[] =>
+    Array.from({ length: count }, (_, i) => ({ id: item.id, x: o.margin + x0 + Math.floor(i / rows) * cw, y: o.margin + (i % rows) * ch, w: cw - o.gap, h: ch - o.gap, rotated }));
+  const cells = [...columns(L.a * L.rowsA, 0, L.cw, L.ch, L.rowsA, flip), ...columns(L.b * L.rowsB, L.a * L.cw, L.rw, L.rh, L.rowsB, !flip)];
+  // A part-filled sheet is charged by its used length, so one orientation alone can beat the full-sheet pattern there.
+  const right = (ps: Placement[]) => Math.max(...ps.map((p) => p.x + p.w));
+  const partial = (n: number) => [
+    cells.slice(0, n),
+    ...(L.rowsA && Math.ceil(n / L.rowsA) * L.cw <= UW + EPS ? [columns(n, 0, L.cw, L.ch, L.rowsA, flip)] : []),
+    ...(L.rowsB && Math.ceil(n / L.rowsB) * L.rw <= UW + EPS ? [columns(n, 0, L.rw, L.rh, L.rowsB, !flip)] : []),
+  ].reduce((a, b) => (right(b) < right(a) - EPS ? b : a));
   const sheets: Placement[][] = [];
-  for (let left = item.qty; left > 0; left -= cells.length) sheets.push(cells.slice(0, Math.min(left, cells.length)));
+  for (let left = item.qty; left > 0; left -= cells.length) sheets.push(left >= cells.length ? cells.slice() : partial(left));
   return sheets;
 }
 

@@ -188,7 +188,7 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
                       <ul className="mt-4 grid gap-2">{a.warnings.map((w) => <li key={w.code} className="note note-warn text-[0.86rem]">{w.message}</li>)}</ul>
                     )}
 
-                    {a.minHole !== null && it.thickness !== null && a.minHole < it.thickness && (
+                    {a.minHole !== null && it.thickness !== null && it.thickness - a.minHole > 0.01 && (
                       <p className="note note-warn mt-2 text-[0.86rem]">En küçük delik {num(a.minHole, 1)} mm, sac kalınlığından ({num(it.thickness, 2)} mm) küçük. Bu delik temiz kesilemeyebilir; müşteriyle teyit edin.</p>
                     )}
 

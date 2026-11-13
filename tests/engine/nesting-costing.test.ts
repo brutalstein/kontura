@@ -73,6 +73,13 @@ describe("nesting", () => {
     expect(more.billableSheets).toBeCloseTo(1.1, 9); // one full sheet + one 100 mm strip
   });
 
+  it("part-filled sheet: 40 × 240×140 uses four columns of one orientation (995 mm), not the mixed full-sheet pattern", () => {
+    const res = nest([{ id: "a", w: 240, h: 140, qty: 40 }], sheet);
+    expect(res.sheetCount).toBe(1);
+    expect(res.sheets[0].usedLength).toBeCloseTo(995, 6); // 10 + 4 × 245 − 5 + 10
+    validate(res, [{ id: "a", w: 240, h: 140, qty: 40 }], sheet);
+  });
+
   it("rejects parts that cannot fit and invalid input", () => {
     expect(() => nest([{ id: "a", w: 3100, h: 100, qty: 1 }], sheet)).toThrow(NestError);
     expect(() => nest([{ id: "a", w: 0, h: 100, qty: 1 }], sheet)).toThrow(NestError);
