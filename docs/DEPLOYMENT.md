@@ -1,6 +1,42 @@
 # Dağıtım ve geri dönüş
 
-Bu bir işletim kılavuzudur; yayına alınmış hizmet kanıtı değildir. Canlı komutlar alan/sunucu/hesap sahibi yetkilendirmesiyle yürütülmelidir. Yerel üretim derlemesi ve PGlite sağlık/genel sayfa kontrolü doğrulandı. Docker/PostgreSQL kapılarının durumu TEST_RESULTS.md içindedir.
+İki dağıtım yolu vardır. Canlıda çalışan kurulum Cloudflare Workers + Supabase'dir (aşağıdaki ilk bölüm, 13 Kasım 2026'da kuruldu ve canlı kabul testinden geçti; kanıt TEST_RESULTS.md ve acceptance/README.md içinde). Docker Compose yolu kendi sunucusunda çalıştırmak isteyenler içindir; yalnızca yerelde doğrulandı.
+
+## Cloudflare Workers + Supabase (canlı, ücretsiz katman)
+
+Canlı adres: https://kontura.ustacenker16.workers.dev. Bileşenler: Worker `kontura` (OpenNext çıktısı), Hyperdrive `kontura-db` (önbellek kapalı), Supabase projesi `kontura` (eu-west-1, PostgreSQL 17, session pooler). Worker veritabanına yalnızca Hyperdrive bağlaması üzerinden ulaşır; bağlantı dizesi Worker ayarlarında veya depoda durmaz.
+
+İlk kurulum, hesap sahibi tarafından bir kez:
+
+1. Supabase'de proje açın, Data API'yi kapatın. Session pooler bağlantı dizesini `.env.production.local` dosyasına `DATABASE_URL` olarak yazın (dosya Git'e girmez).
+2. Şemayı kurun: `node --env-file=.env.production.local scripts/migrate.mjs`. Migration'lar tekrar çalıştırılabilir. Tüm tablolarda RLS açıldı; uygulama tablo sahibi olarak bağlandığı için etkilenmez, anahtarsız Data API erişimi ise kapalı kalır.
+3. `npx wrangler login`, ardından `npx wrangler hyperdrive create kontura-db --connection-string "<session pooler dizesi>" --caching-disabled`. Dönen kimliği `wrangler.jsonc` içindeki `hyperdrive` bağlamasına yazın.
+4. `wrangler.jsonc` içindeki `APP_URL` değerini gerçek adrese ayarlayın.
+
+Her sürümde:
+
+```bash
+pnpm cf:build
+pnpm cf:deploy
+```
+
+Şema değiştiyse dağıtımdan önce 2. adımdaki migration komutunu çalıştırın (`DB_MIGRATE_ON_START=false`; Worker açılışta migration yapmaz). Dağıtımdan sonra `/api/health` 200 ve `status=ok` dönmelidir; bu istek Hyperdrive üzerinden gerçek bir sorgu çalıştırır.
+
+Bu kurulumun sınırları:
+
+- Windows'ta OpenNext derlemesi pnpm sembolik bağlarını okuyamaz; `pnpm-workspace.yaml` içindeki `nodeLinker: hoisted` bu yüzden vardır.
+- Workers Free: istek başına 10 ms CPU, günde 100.000 istek, 3 MiB sıkıştırılmış paket (mevcut paket yaklaşık 2 MiB). Canlı ölçümde medyan 8–23 ms, en yüksek 516 ms CPU görüldü ve 356 istekte hiçbir istek limit nedeniyle kesilmedi; Cloudflare bu sınırı kısa aşımlarda esnek uygular, sürekli yükte 1102 hatası verebilir. Ücretli Workers planı (30 sn CPU) bu riski kaldırır.
+- Supabase ücretsiz proje yaklaşık bir hafta trafik almazsa duraklar. `.github/workflows/keepalive.yml` her gün `/api/health` çağırır. GitHub, 60 gün hareketsiz depoda zamanlanmış işleri kapatır.
+- `MAIL_OPTIONAL=true`: SMTP tanımlı olmadığı için e-posta gönderilmez ve gönderilmiş gibi gösterilmez. Teklif ve davet bağlantıları ekranda verilir; şifre sıfırlama bağlantısını yalnızca işletmeci üretir: `npx tsx --env-file=.env.production.local scripts/admin.ts <e-posta> --reset-link` (komut yerel veritabanında test edildi; canlı veritabanında henüz çalıştırılmadı).
+- Ödeme kapalıdır. Deneme süresi 14 gündür; işletmeci bir firmaya planı elle tanımlayabilir: aynı komutla `--plan workshop --months 12`.
+- Hız sınırı Worker örneği başına bellektedir; örnekler arasında paylaşılmaz.
+- Yedek: Supabase ücretsiz katmanda otomatik yedek sunmaz. `pg_dump "$DATABASE_URL" -Fc > kontura-backup.dump` komutunu düzenli çalıştırın; zamanlanmış bir yedek kurulmadı.
+
+Geri dönüş: `npx wrangler rollback` önceki Worker sürümüne döner. Şema geri alınmaz; migration'lar ekleyicidir.
+
+## Docker Compose yolu
+
+Aşağıdaki bölümler kendi sunucusunda çalıştırma içindir. Canlı komutlar alan/sunucu/hesap sahibi yetkilendirmesiyle yürütülmelidir. Docker/PostgreSQL kapılarının durumu TEST_RESULTS.md içindedir.
 
 ## Ortamlar ve değişkenler
 

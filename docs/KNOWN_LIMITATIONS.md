@@ -1,11 +1,16 @@
 # Bilinen sınırlamalar
 
-12 Kasım 2026, devam oturumu durumu.
+13 Kasım 2026, canlı dağıtım sonrası durum.
 
 ## Canlı yayın kapıları
 
-- Harici dağıtım yapılmadı; alan adı/TLS, gerçek sunucu ve o sunucudaki PostgreSQL doğrulanmadı. Yerel PostgreSQL 17 ve güncel Docker kurulumu doğrulandı.
-- Docker/Compose imajı, gerçek PostgreSQL testleri, migration tekrarı ve ayrı veritabanına geri yükleme yerelde doğrulandı. Uzaktan CI ve gerçek sunucu işletimi doğrulanmadı.
+- Canlı kurulum ücretsiz katmandadır: Cloudflare Workers Free (istek başına 10 ms CPU, günde 100.000 istek) ve Supabase Free. Canlı ölçümde medyan 8–23 ms, en yüksek 516 ms CPU görüldü ve 356 istekte hiçbiri kesilmedi; sürekli yükte Cloudflare 1102 hatası verebilir. Ücretli kullanım öncesinde Workers ücretli planı gerekir.
+- Supabase ücretsiz proje yaklaşık bir hafta trafiksiz kalırsa duraklar; günlük keep-alive işi buna karşıdır ama GitHub 60 gün hareketsiz depoda zamanlanmış işleri kapatır. Otomatik yedek yoktur.
+- E-posta gönderimi kapalıdır (SMTP hesabı ve alan adı yok). Doğrulama, davet ve teklif e-postaları gitmez; bağlantılar ekranda verilir. Kullanıcı şifresini unutursa sıfırlama bağlantısını yalnızca işletmeci komutla üretebilir. Portal talebi sonrası ziyaretçiye gösterilen "e-postayla gönderecek" ifadesi atölyenin kendi e-postasını varsayar.
+- Hız sınırı Worker örneği başına bellektedir; örnekler arasında paylaşılmadığı için gerçek sınır yapılandırılandan gevşektir.
+- Özel alan adı yoktur; adres `workers.dev` alt alanıdır. Uptime alarmı kurulmadı.
+- Canlıda giriş (şifreyle oturum açma), ekip daveti, parça hafızası, işlem kataloğu ve veri silme elle denenmedi; bunlar yalnızca yerel otomatik testlerle kapsanır.
+- Docker/Compose yolu yalnızca yerelde doğrulandı.
 - Üretim sunucusundan yerel Mailpit'e SMTP teslimi doğrulandı; dış alıcıya gerçek SMTP teslimi ve iyzico sandbox/canlı işlemleri yapılmadı. Üye işyeri, plan/anahtarlar, imzalı webhook aktivasyonu ve gerçek ödeme formu CSP kontrolü bekliyor.
 - Webhook atomikliği, yinelenen/geciken olaylar, sağlayıcının başarılı ödeme dönemi ve süre sonu erişimi yerel servis testleriyle kapatıldı. Bu testlerde iyzico yanıtları taklittir; gerçek sağlayıcı doğrulamasının yerine geçmez. Tüm webhook denemeleri kaçırılırsa düzenli otomatik uzlaştırma işi yoktur; abonelik sağlayıcıyla yeniden eşitlenene kadar ücretli erişim süresi dolabilir.
 - İşletme unvanı/adresi, destek adresi, marka kontrolü ve yasal metin incelemesi tamamlanmalıdır. Yasal sayfalarda taslak uyarısı vardır.
@@ -25,12 +30,13 @@
 
 ## İşletim ve doğrulama
 
-- Uygulama düzeyinde yalıtım; RLS yok. Süreç içi hız sınırı, güvenilir ters vekil IP başlığı ve unsafe-inline CSP sınırları vardır.
+- Firma yalıtımı uygulama düzeyindedir. Supabase'de RLS yalnızca anahtarsız Data API erişimini kapatmak için açıktır; uygulama tablo sahibi olarak bağlanır ve RLS politikalarına dayanmaz. Süreç içi hız sınırı, güvenilir ters vekil IP başlığı ve unsafe-inline CSP sınırları vardır.
 - Paralel kota/koltuk yarışları, dağıtık yük, uzun süreli stres ve bağımsız sızma testi doğrulanmadı.
 - İzleme/uyarı ve otomatik yedek çalışan servis olarak kurulmadı; sağlık ucu ve prosedürler hazır.
 - Ekran okuyucu/WCAG denetimi yok. Responsive/tema/taşma kontrolleri bunun yerine geçmez.
-- Lint 0 hata, 40 kullanılmayan değişken uyarısıyla geçti. Vite `__dirname` için ileri sürüm uyarısı verir.
+- Lint 0 hata, 41 kullanılmayan değişken uyarısıyla geçti. `pnpm cf:build` sonrasında `pnpm lint` `.open-next` çıktısını da tarar ve binlerce hata verir; ESLint yapılandırması bir koruma kancasıyla kilitli olduğu için yok sayma kuralı eklenemedi. Yerelde `npx eslint --ignore-pattern ".open-next/**" --ignore-pattern ".wrangler/**"` kullanın; CI'da bu klasör oluşmaz. Vite `__dirname` için ileri sürüm uyarısı verir.
 - Standart E2E ayrı port/derleme/veri dizininde geliştirme/PGlite/test faturalamasıyla çalışır. Ayrıca güncel Docker/PostgreSQL/SMTP üretim sunucusunda 14 E2E geçti; bu yerel localhost kontrolü gerçek HTTPS oturumunu doğrulamaz. Önceki oturumun soğuk sunucu kayıt takılması son tam suite'te görülmedi; tarihsel kök neden bağımsız olarak kanıtlanmadı.
+- Geliştirme sunucusunda (Next 16.4.6, webpack) bir dosya değiştikten veya yeni bir sayfa ilk kez derlendikten sonra başka bir sekme açılırsa, önceden açık sekmeler bir kez tam yenilenir ve kaydedilmemiş form girdisi kaybolur. Neden Next'in geliştirme sunucusunun eşitleme mesajını tüm sekmelere yayınlamasıdır; üretim derlemesini etkilemez. E2E testi tek yenilemeye izin verir, yenileme döngüsünü hata sayar.
 - Yeni geliştirme başlatıcısı miras alınan yabancı DATABASE_URL değerini kullanmaz. Doğrudan Next veya yönetici/migration komutlarını çalıştırırken ortam değişkenleri hâlâ önceliklidir; bağlantının bu projeye ait olduğundan emin olun.
 - Üretim E2E tekrarları aynı süreçte saatlik 10 kayıt sınırını tüketebilir. Geçici test kurulumunun app sürecini tekrar koşudan önce yeniden başlatın; uygulamadaki hız sınırını kapatmayın.
 

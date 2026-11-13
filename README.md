@@ -38,4 +38,4 @@ PostgreSQL migration: `pnpm db:migrate`. Yönetici: `pnpm admin kullanici@exampl
 
 ## Teslim durumu
 
-Yerel akışlar, güncel Docker üretimi, yerel SMTP yakalama ve yedekten dönüş doğrulandı. Canlı yayın, dış alıcıya SMTP teslimi ve iyzico aktivasyonu yapılmadı. Ayrıntılar: [proje durumu](docs/PROJECT_STATUS.md), [test kanıtları](docs/TEST_RESULTS.md), [dağıtım](docs/DEPLOYMENT.md), [sınırlamalar](docs/KNOWN_LIMITATIONS.md).
+Canlı: https://kontura.ustacenker16.workers.dev (Cloudflare Workers + Supabase, ücretsiz katman). Dağıtım: `pnpm cf:build` ardından `pnpm cf:deploy`. Canlı ortamda gerçekçi atölye verisiyle kabul testi yapıldı ve fiyatlar elle doğrulandı. E-posta gönderimi ve iyzico ödemesi etkin değildir. Ayrıntılar: [proje durumu](docs/PROJECT_STATUS.md), [canlı kabul testi](docs/acceptance/README.md), [test kanıtları](docs/TEST_RESULTS.md), [dağıtım](docs/DEPLOYMENT.md), [sınırlamalar](docs/KNOWN_LIMITATIONS.md).

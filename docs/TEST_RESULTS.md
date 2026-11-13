@@ -1,5 +1,34 @@
 # Test kanıtları
 
+## Canlı dağıtım oturumu — 13 Kasım 2026
+
+Windows, Node.js 24, pnpm 10.15.0 (`nodeLinker: hoisted`). Aşağıdaki sonuçlar bu oturumda gerçekten çalıştırıldı; güncel sayılar bu tablodadır. 12 Kasım tablosu tarihseldir.
+
+| Kontrol | Komut / yöntem | Sonuç |
+| --- | --- | --- |
+| PGlite birim/servis/script | TEST_DATABASE_URL boş, `pnpm test` | 11 dosya, 93/93 test, çıkış 0 |
+| Tip kontrolü | `pnpm typecheck` | Çıkış 0 |
+| Lint | `npx eslint --ignore-pattern ".open-next/**" --ignore-pattern ".wrangler/**"` | 0 hata, 41 kullanılmayan değişken uyarısı. Düz `pnpm lint`, Cloudflare derleme çıktısı klasördeyken onu da tarar ve hata verir |
+| Üretim derlemesi (Node) | `pnpm build` | Çıkış 0 |
+| Geliştirme tarayıcısı | `pnpm e2e` | 15/15, 2,1 dakika; ayrı 3101 portu/.next-e2e/.data/e2e |
+| Cloudflare derlemesi ve dağıtımı | `pnpm cf:build`, `pnpm cf:deploy` | İkisi de çıkış 0; sıkıştırılmış paket 2.053 KiB (sınır 3 MiB); Worker sürümü `f2fe1297-0fe4-49ab-9104-b246dd8af1ea` |
+| Canlı duman testi | Yeniden dağıtımdan sonra oturumsuz tarayıcıdan HTTP istekleri | `/api/health` 200 `status=ok`; `/`, `/fiyatlar`, `/giris`, `/kayit`, `/yasal/kvkk`, `/ornek.dxf` 200; anonim `/api/export` 401; `/panel` oturumsuz yönlendirir; kapalı portal 404; yanıtlarda CSP başlığı var |
+| Düzeltmelerin canlı doğrulaması | Yeniden dağıtımdan sonra hesap sahibinin oturumu | Portal taslağı yeniden kaydedilince malzeme 1.476,23 ₺ (995 mm şerit), toplam 3.441,90 ₺ + KDV = 4.130,28 ₺; elle hesapla aynı. Flanştaki yanlış delik uyarısı kalktı |
+| Canlı kabul testi | Hesap sahibinin oturumu ve oturumsuz ikinci tarayıcı, elle | Geçti; adımlar ve elle hesap acceptance/README.md içinde |
+| Canlı Worker logları | `wrangler tail`, iki oturum | 356 istek, hepsi `ok`, yakalanmamış istisna yok; medyan 8–23 ms, en yüksek 516 ms CPU |
+| Uzak CI | GitHub Actions `Verify Kontura` | Commit `f5b6b9d` koşusu yeşil (Ubuntu, temiz kurulum): lint, tip kontrolü, PGlite testleri, PostgreSQL 17 testleri, migration iki kez, Chromium E2E, üretim derlemesi. Önceki üç koşu kırmızıydı (aşağıda) |
+| Keep-alive işi | GitHub Actions `Keep database awake`, elle tetiklendi | Başarılı, 6 saniye |
+
+Gerçek PostgreSQL testleri bu oturumda yalnızca uzak CI'da çalıştı (yerelde Docker kapalıydı). Çalıştırılmayanlar: Docker üretim E2E'si ve yedekten dönüş. Bunların son geçerli sonuçları 12 Kasım tablosundadır ve o günden sonra yerleşim motoru, test yardımcısı ve bir E2E testi değişti.
+
+Yakalanan sorunlar:
+
+- E2E `development.spec.ts` temiz bağımlılık kurulumunda kalıyordu. Kök neden Next 16.4.6 geliştirme sunucusunun (webpack) yeni bağlanan sekmede eşitleme mesajını tüm sekmelere yayınlaması ve derleme özeti değişen sekmenin bir kez yenilenmesidir; kaynak değişikliği olmadan, yalnızca ikinci sekmede yeni bir sayfa açarak yeniden üretildi. Test artık CSS güncellemesinin girdiyi koruduğunu ikinci sekme açılmadan önce doğrular, sonrasında tek yenilemeye izin verir ve döngüyü hata sayar. 12 Kasım'da bu testin eski hâliyle neden geçtiği belirlenemedi.
+- Uzak CI'ın ilk üç koşusu gerçek PostgreSQL testinde `terminating connection due to administrator command` yakalanmamış hatasıyla kırmızıydı (testlerin kendisi geçiyordu). Kök neden: `pool.end()` soketler kapanmadan döner, ardından gelen zorla veritabanı silme kapanmakta olan bağlantıyı keser ve pg-pool bu hatayı havuz üzerinde yayınlar. İlk düzeltme dinleyiciyi istemciye ekledi ve işe yaramadı (üçüncü kırmızı koşu); ikinci düzeltme dinleyiciyi havuza ekledi ve koşu yeşile döndü. Yerelde yeniden üretilemedi.
+- Kabul testinin bulduğu yerleşim ve delik uyarısı sorunları acceptance/README.md içindedir; yerleşim için regresyon testi eklendi.
+
+---
+
 ## Son Codex devamının güncel sonuçları — 12 Kasım 2026
 
 Windows, Node.js 24.11.0, pnpm 10.15.0. Aşağıdaki sonuçlar bu devamda gerçekten çalıştırıldı. Daha aşağıdaki eski oturum kanıtları tarihseldir; güncel sayılar bu tablodadır.
